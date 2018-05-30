@@ -5,38 +5,86 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>vue</title>
+    <style>
+        .active {
+            background-color: #83d0f2;
+        }
+
+    </style>
 </head>
 <body>
-    <div id="app">
-        {{message}}
-    </div>
+    <div id="app-demo">
+        <div v-bind:class="classObject">
+            <p v-if="loginType === 'username'"> 
+                <label>你的姓名</label>
+                <input v-model="fullName"  key="username-input">
+            </p>
+            <p v-else>
+                <label>你的年龄</label>
+                <input placeholder="输入你的年龄" key="userage-input">
+            </p>
+            <button @click="toggleLoginType">toggle loginType</button>
 
-    <div id="app-2" v-bind:title="message">
-        <span>
-            鼠标悬停几秒钟查看此处动态绑定的提示信息！
-        </span>
-    </div>
+            <p>姓名: {{fullName}}</p>
+            <p>当前时间: {{now}}</p>
+            <p>
+                请输入文本：
+                <input v-model="message">
+            </p>
+            <p>正常文本: {{message}}</p>
+            <p>反序文本: {{ reversedMessage }}</p>
+            <button @click="reverseMessage">反序</button>
 
-    <div id="app-3">
-        <p v-if="seen">现在你可以看到我</p>
-    </div>
+            <h3>v-for 显示过滤/排序结果</h3>
+            <p>原数组</p>
+                <ol>
+                    <li v-for="n in numbers">{{n}}</li>
+                </ol>
+            <p>用computed</p>
+            <ol>
+                <li v-for="n in even">{{n}}</li>
+            </ol>
+            <p>用methods</p>
+            <ol>
+                <li v-for="n in filterEven(numbers)">{{n}}</li>
+            </ol>
 
-    <div id="app-4">
-        <ol>
-            <li v-for="todoItem in todoList">
-                {{todoItem.text}}
-            </li>
-        </ol>
-    </div>
 
-    <div id="app-5">
-        <p>{{message}}</p>
-        <input v-model="message">
-        <button v-on:click="reverseMessage">逆转消息</button>
+            <h3>一段取值范围的 v-for</h3>
+            <span v-for="n in 10">{{n}}</span>
+
+
+            <h3>v-for with v-if</h3>
+            <p>未完成任务数量： {{todoCounter}}</p>
+            <p>已完成任务数量： {{completedCounter}}</p>
+            <!-- <input type="text" v-model="todoList.text" placeholder="在此添加任务"> -->
+            <h4>待完成的任务</h4>
+            <ol>
+                <li v-for="item in todoList" :key="item.id">
+                    <input type="checkbox" :id="item.id" :value="item.text" v-model="checkedNames">
+                    <label for="item.id">{{item.text}}</label>          
+                    <button @click="todoComplete">完成</button>
+                    <button @click="todoRemove">删除</button>
+                </li>
+            </ol>
+            <select v-model="selectedNames" multiple>
+                <option value="" disabled>请选择</option>
+                <option v-for="item in todoList" :value="item.text" >{{item.text}}</option>
+            </select>
+            <p>checked的任务: {{ checkedNames }}</p>
+            <p>selected的任务: {{ selectedNames }}</p>            
+            <h4>已完成的任务</h4>
+            <ol>
+                <li v-for="item in completedList">{{item.text}}</li>
+            </ol>
+            
+
+        </div>
+
     </div>
 
     <div id="app-6">
-        <ol>
+        <ol  v-if="Math.random()>0.5">
             <todo-item 
                 v-for="item in groceryList"
                 v-bind:todo="item"
@@ -45,55 +93,102 @@
         </ol>
     </div>
 
+    <div id="app-7">
+        <p>Using mustaches: {{ rawHtml }}</p>
+        <p>Using v-html directive: <span v-html="rawHtml"></span></p>
+    </div>
+
 
     <!-- 开发环境版本，包含了用帮助的命令行警告 -->
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.12.0/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.13.1/lodash.min.js"></script>
     
     <script>
-        var app = new Vue({
-            el: '#app',
+        var appDemo = new Vue({
+            el: '#app-demo',
             data: {
-                message: 'Hello Vue!'
-            }
-        })
-
-
-        var app2 = new Vue({
-            el: '#app-2',
-            data: {
-                message: '页面加载于' + new Date().toLocaleString()
-            }
-        })
-
-        var app3 = new Vue({
-            el: '#app-3',
-            data: {
-                seen: true
-            }
-        })
-
-        var app4 = new Vue({
-            el: '#app-4',
-            data: {
+                message: '',
+                name: {firstName:'Sam',lastName:'Pig'},
+                isActive: true,
+                error: null,
+                loginType: 'username',
+                numbers: [1,2,3,4,5,6,11,23,44,45,46,47],
                 todoList: [
                     {text: '学习JavaScript'},
                     {text: '学习vue'},
                     {text: '做个牛逼项目'}
-                ]
-            }
-        })
-
-        var app5 = new Vue({
-            el: '#app-5',
-            data: {
-                message:''
+                ],
+                completedList: [],
+                checked: false,
+                checkedNames: [],
+                selectedNames: []
+                
+            },
+            computed: {
+                now: function(){
+                    return new Date().toLocaleString()
+                },
+                fullName: {
+                    get: function(){
+                        return this.name.firstName + ' ' + this.name.lastName
+                    },
+                    set: function(nameValue){
+                        let nameArray = nameValue.split(' ');
+                        this.name.firstName = nameArray[0];
+                        this.name.lastName = nameArray[nameArray.length-1]
+                    }
+                },
+                reversedMessage: function(){
+                    let reversedMessage = this.message.split('').reverse().join('');
+                    return reversedMessage
+                },
+                classObject: function(){
+                    return {
+                        active: this.isActive && !this.error,
+                        'text-danger': this.error && this.error.type === 'fatal'
+                    }
+                },
+                even: function(){
+                    return this.numbers.filter((n)=>{
+                        return n % 2 === 0
+                    })
+                },
+                todoCounter(){
+                    return this.todoList.length
+                },
+                completedCounter(){
+                    return this.completedList.length
+                }
             },
             methods: {
                 reverseMessage: function(){
                     this.message = this.message.split('').reverse().join('')
+                },
+                toggleLoginType: function(){
+                    if(this.loginType === 'username'){
+                        this.loginType = 'userage'
+                    }else{
+                        this.loginType = 'username'
+                    }
+                },
+                filterEven(array){
+                    return array.filter((n)=>{
+                        return n % 2 === 0
+                    })
+                },
+                todoComplete(index){
+                    this.completedList.unshift(this.todoList.splice(index,1).pop())
+                },
+                todoRemove(index){
+                    this.todoList.splice(index,1)
                 }
             }
         })
+
+
+
+
 
 
         Vue.component('todo-item',{
@@ -110,7 +205,13 @@
                 ]
             }
         })
-
+        
+        var app7 = new Vue({
+            el: '#app-7',
+            data: {
+                rawHtml: '<span style="color:red">This should be red</span>'
+            }
+        })
 
     </script>
 </body>
